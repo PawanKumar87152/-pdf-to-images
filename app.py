@@ -1,80 +1,52 @@
 import streamlit as st
-from pdf2image import convert_from_bytes
-import zipfile
+import fitz  # PyMuPDF
+from PIL import Image
 import io
+import zipfile
 
-# ---------------- UI CONFIG ----------------
 st.set_page_config(page_title="PDF to Images Pro", layout="wide")
 
-# ---------------- HEADER ----------------
-st.markdown("""
-<div style="text-align:center;">
-    <h1>📄➡️🖼️ PDF to Images Pro</h1>
-    <p style="font-size:18px; color:gray;">
-        Convert your PDF into high-quality images instantly
-    </p>
-</div>
-""", unsafe_allow_html=True)
+st.title("📄➡️🖼️ PDF to Images Pro (Fixed Version)")
 
-st.markdown("---")
+uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])
 
-# ---------------- HERO SECTION ----------------
-col1, col2 = st.columns(2)
+def pdf_to_images(pdf_bytes):
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    images = []
 
-with col1:
-    st.image("https://cdn-icons-png.flaticon.com/512/337/337946.png", width=250)
+    for page in doc:
+        pix = page.get_pixmap()
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        images.append(img)
 
-with col2:
-    st.markdown("""
-    ### 🚀 Fast & Secure Conversion Tool
-    ✔ High-quality PNG output  
-    ✔ Instant download ZIP  
-    ✔ No login required  
-    ✔ 100% free tool  
-    """)
+    return images
 
-st.markdown("---")
-
-# ---------------- UPLOAD SECTION ----------------
-st.markdown("## 📤 Upload Your PDF")
-
-uploaded_file = st.file_uploader("Drag & Drop PDF here", type=["pdf"])
-
-# ---------------- PROCESS ----------------
 if uploaded_file:
 
-    st.success("File uploaded successfully ✅")
+    if st.button("Convert PDF 🚀"):
 
-    if st.button("🚀 Convert Now"):
+        images = pdf_to_images(uploaded_file.read())
 
-        with st.spinner("Converting your PDF... ⏳"):
+        zip_buffer = io.BytesIO()
 
-            images = convert_from_bytes(uploaded_file.read())
+        with zipfile.ZipFile(zip_buffer, "w") as zip_file:
 
-            zip_buffer = io.BytesIO()
+            for i, img in enumerate(images):
+                img_bytes = io.BytesIO()
+                img.save(img_bytes, format="PNG")
+                img_bytes.seek(0)
 
-            with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+                zip_file.writestr(f"page_{i+1}.png", img_bytes.read())
 
-                for i, image in enumerate(images):
+                st.image(img, caption=f"Page {i+1}")
 
-                    img_bytes = io.BytesIO()
-                    image.save(img_bytes, format="PNG")
-                    img_bytes.seek(0)
-
-                    zip_file.writestr(f"page_{i+1}.png", img_bytes.read())
-
-                    st.image(image, caption=f"Page {i+1}", use_container_width=True)
-
-            zip_buffer.seek(0)
-
-        st.success("Conversion Complete 🎉")
+        zip_buffer.seek(0)
 
         st.download_button(
-            "⬇️ Download All Images (ZIP)",
+            "⬇️ Download Images ZIP",
             zip_buffer,
             file_name="pdf_images.zip",
             mime="application/zip"
         )
-
 else:
-    st.info("👈 Upload a PDF to start conversion")
+    st.info("Upload PDF to start")
