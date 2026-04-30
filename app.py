@@ -2,143 +2,93 @@ import streamlit as st
 import fitz
 from PIL import Image
 import io
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 
 # ---------------- CONFIG ----------------
-st.set_page_config(page_title="PDF Suite Pro", layout="wide")
+st.set_page_config(page_title="PDF Studio Pro", layout="wide")
 
-# ---------------- SESSION ----------------
+# ---------------- STATE ----------------
 if "page" not in st.session_state:
     st.session_state.page = "home"
 
-# ---------------- GLASSMORPHISM CSS ----------------
+# ---------------- PREMIUM CSS ----------------
 st.markdown("""
 <style>
 
-/* Background */
+/* background */
 body {
-    background: linear-gradient(135deg, #e0eafc, #cfdef3);
+    background: linear-gradient(135deg, #eef2f3, #8e9eab);
 }
 
-/* Glass card */
-.glass {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    padding: 30px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    text-align: center;
-}
-
-/* Title */
+/* title */
 .title {
     font-size: 48px;
     font-weight: 900;
-    color: #1f4fff;
     text-align: center;
+    color: #111;
 }
 
-/* Subtitle */
+/* subtitle */
 .sub {
     text-align: center;
+    color: #333;
     font-size: 18px;
-    color: #444;
 }
 
-/* Buttons */
+/* card buttons (CANVA STYLE) */
 .stButton > button {
     width: 100%;
     height: 120px;
-    font-size: 20px;
+    border-radius: 20px;
+    font-size: 18px;
     font-weight: 700;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.7);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.4);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
     transition: 0.3s;
 }
 
 .stButton > button:hover {
-    transform: translateY(-5px);
-    background: rgba(255,255,255,0.9);
-    box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+    transform: scale(1.06);
+    background: white;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- HOME ----------------
+# ---------------- HOME DASHBOARD ----------------
 def home():
 
-    st.markdown("<div class='glass'>", unsafe_allow_html=True)
+    st.markdown("<div class='title'>🎨 PDF STUDIO PRO</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sub'>Canva-style PDF tool suite (15 tools)</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='title'>📄 PDF SUITE PRO</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sub'>Modern glassmorphism PDF tools dashboard</div>", unsafe_allow_html=True)
+    st.markdown("---")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    tools = [
+        "📎 Merge PDF", "✂️ Split PDF", "🖼️ PDF → Images",
+        "📷 Images → PDF", "🔄 Rotate PDF", "📄 Extract Pages",
+        "🗑️ Delete Pages", "📊 PDF Info", "🔐 Protect PDF",
+        "🔓 Unlock PDF", "🖋️ Watermark", "🔢 Page Numbers",
+        "📦 Compress PDF", "📑 Reorder Pages", "🏠 Home"
+    ]
 
-    st.markdown("### ")
+    cols = st.columns(3)
 
-    col1, col2, col3 = st.columns(3)
+    for i, tool in enumerate(tools):
+        with cols[i % 3]:
+            if st.button(tool):
+                st.session_state.page = tool
 
-    with col1:
-        if st.button("📄 PDF → Images"):
-            st.session_state.page = "pdf2img"
+# ---------------- TOOL FUNCTIONS ----------------
 
-    with col2:
-        if st.button("📎 Merge PDF"):
-            st.session_state.page = "merge"
-
-    with col3:
-        if st.button("🏠 Home"):
-            st.session_state.page = "home"
-
-# ---------------- PDF TO IMAGES ----------------
-def pdf_to_images():
-
-    st.markdown("<div class='glass'>", unsafe_allow_html=True)
-    st.title("📄➡️🖼️ PDF to Images")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    file = st.file_uploader("Upload PDF", type=["pdf"])
-
-    if file and st.button("Convert 🚀"):
-
-        doc = fitz.open(stream=file.read(), filetype="pdf")
-
-        for i, page in enumerate(doc):
-
-            pix = page.get_pixmap()
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-
-            st.image(img, caption=f"Page {i+1}")
-
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-
-            st.download_button(
-                f"⬇️ Page {i+1}",
-                buf.getvalue(),
-                file_name=f"page_{i+1}.png"
-            )
-
-    if st.button("⬅️ Back"):
-        st.session_state.page = "home"
-
-# ---------------- MERGE PDF ----------------
 def merge_pdf():
-
-    st.markdown("<div class='glass'>", unsafe_allow_html=True)
     st.title("📎 Merge PDF")
-    st.markdown("</div>", unsafe_allow_html=True)
 
     files = st.file_uploader("Upload PDFs", accept_multiple_files=True)
 
-    if files and st.button("Merge 🚀"):
-
+    if files and st.button("Merge"):
         merger = PdfMerger()
-
         for f in files:
             merger.append(f)
 
@@ -147,17 +97,63 @@ def merge_pdf():
         merger.close()
 
         with open(output, "rb") as f:
-            st.download_button("⬇️ Download", f, file_name="merged.pdf")
+            st.download_button("Download", f, file_name="merged.pdf")
 
-    if st.button("⬅️ Back"):
-        st.session_state.page = "home"
+def split_pdf():
+    st.title("✂️ Split PDF")
+
+    file = st.file_uploader("Upload PDF")
+
+    if file and st.button("Split"):
+        reader = PdfReader(file)
+
+        for i, page in enumerate(reader.pages):
+            writer = PdfWriter()
+            writer.add_page(page)
+
+            buf = io.BytesIO()
+            writer.write(buf)
+            buf.seek(0)
+
+            st.download_button(f"Page {i+1}", buf, file_name=f"page_{i+1}.pdf")
+
+def pdf_to_images():
+    st.title("🖼️ PDF → Images")
+
+    file = st.file_uploader("Upload PDF")
+
+    if file and st.button("Convert"):
+        doc = fitz.open(stream=file.read(), filetype="pdf")
+
+        for i, page in enumerate(doc):
+            pix = page.get_pixmap()
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+
+            st.image(img)
+
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+
+            st.download_button(f"Page {i+1}", buf.getvalue(), file_name=f"page_{i+1}.png")
 
 # ---------------- ROUTER ----------------
-if st.session_state.page == "home":
+page = st.session_state.page
+
+if page == "home":
     home()
 
-elif st.session_state.page == "pdf2img":
+elif page == "📎 Merge PDF":
+    merge_pdf()
+
+elif page == "✂️ Split PDF":
+    split_pdf()
+
+elif page == "🖼️ PDF → Images":
     pdf_to_images()
 
-elif st.session_state.page == "merge":
-    merge_pdf()
+elif page == "🏠 Home":
+    st.session_state.page = "home"
+    st.rerun()
+
+else:
+    st.session_state.page = "home"
