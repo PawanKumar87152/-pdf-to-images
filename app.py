@@ -1,84 +1,52 @@
 import streamlit as st
-from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 import fitz
 from PIL import Image
 import io
+from PyPDF2 import PdfMerger
 
-st.set_page_config(page_title="PDF Suite", layout="wide")
+st.set_page_config(page_title="PDF SaaS Suite", layout="wide")
 
-# ---------------- HEADER ----------------
-st.markdown("""
-<h1 style='text-align:center;'>📄 PDF TOOL SUITE</h1>
-<p style='text-align:center;color:gray;'>All-in-one PDF tools like iLovePDF</p>
-<hr>
-""", unsafe_allow_html=True)
+# ---------------- SESSION ----------------
+if "page" not in st.session_state:
+    st.session_state.page = "home"
 
-# ---------------- SIDEBAR MENU ----------------
-tool = st.sidebar.selectbox(
-    "Choose Tool",
-    [
-        "Home",
-        "Merge PDF",
-        "Split PDF",
-        "PDF to Images"
-    ]
-)
+# ---------------- HOME PAGE ----------------
+def home():
+    st.markdown("""
+        <div style="text-align:center;">
+            <h1>📄 PDF SaaS Suite</h1>
+            <p style="color:gray;">All-in-one PDF tools like iLovePDF</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-# ---------------- HOME ----------------
-if tool == "Home":
     st.image("https://cdn-icons-png.flaticon.com/512/337/337946.png", width=200)
-    st.write("### Welcome to PDF Suite 🚀")
-    st.write("Select a tool from sidebar")
 
-# ---------------- MERGE PDF ----------------
-elif tool == "Merge PDF":
+    if st.button("🚀 Start Using Tools"):
+        st.session_state.page = "dashboard"
 
-    st.subheader("📎 Merge PDF")
+# ---------------- TOOL DASHBOARD ----------------
+def dashboard():
 
-    files = st.file_uploader("Upload PDFs", type="pdf", accept_multiple_files=True)
+    st.title("🧰 Choose a Tool")
 
-    if files and st.button("Merge"):
+    tools = st.columns(3)
 
-        merger = PdfMerger()
+    with tools[0]:
+        if st.button("📄 PDF → Images"):
+            st.session_state.page = "pdf2img"
 
-        for f in files:
-            merger.append(f)
+    with tools[1]:
+        if st.button("📎 Merge PDF"):
+            st.session_state.page = "merge"
 
-        output = "merged.pdf"
-        merger.write(output)
-        merger.close()
-
-        with open(output, "rb") as f:
-            st.download_button("Download", f, file_name="merged.pdf")
-
-# ---------------- SPLIT PDF ----------------
-elif tool == "Split PDF":
-
-    st.subheader("✂️ Split PDF")
-
-    file = st.file_uploader("Upload PDF")
-
-    if file and st.button("Split"):
-
-        reader = PdfReader(file)
-
-        for i, page in enumerate(reader.pages):
-
-            writer = PdfWriter()
-            writer.add_page(page)
-
-            output = f"page_{i+1}.pdf"
-
-            with open(output, "wb") as f:
-                writer.write(f)
-
-            with open(output, "rb") as f:
-                st.download_button(f"Download Page {i+1}", f)
+    with tools[2]:
+        if st.button("🏠 Back Home"):
+            st.session_state.page = "home"
 
 # ---------------- PDF TO IMAGES ----------------
-elif tool == "PDF to Images":
+def pdf_to_images():
 
-    st.subheader("🖼️ PDF to Images")
+    st.title("📄➡️🖼️ PDF to Images")
 
     file = st.file_uploader("Upload PDF")
 
@@ -97,7 +65,47 @@ elif tool == "PDF to Images":
             img.save(buf, format="PNG")
 
             st.download_button(
-                f"Download Page {i+1}",
+                f"⬇️ Download Page {i+1}",
                 buf.getvalue(),
                 file_name=f"page_{i+1}.png"
             )
+
+    if st.button("⬅️ Back"):
+        st.session_state.page = "dashboard"
+
+# ---------------- MERGE PDF ----------------
+def merge_pdf():
+
+    st.title("📎 Merge PDFs")
+
+    files = st.file_uploader("Upload PDFs", accept_multiple_files=True)
+
+    if files and st.button("Merge"):
+
+        merger = PdfMerger()
+
+        for f in files:
+            merger.append(f)
+
+        output = "merged.pdf"
+        merger.write(output)
+        merger.close()
+
+        with open(output, "rb") as f:
+            st.download_button("⬇️ Download Merged PDF", f, file_name="merged.pdf")
+
+    if st.button("⬅️ Back"):
+        st.session_state.page = "dashboard"
+
+# ---------------- ROUTER ----------------
+if st.session_state.page == "home":
+    home()
+
+elif st.session_state.page == "dashboard":
+    dashboard()
+
+elif st.session_state.page == "pdf2img":
+    pdf_to_images()
+
+elif st.session_state.page == "merge":
+    merge_pdf()
