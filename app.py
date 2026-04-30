@@ -1,139 +1,96 @@
 import streamlit as st
 import tools
 
-st.set_page_config(page_title="PDF24 Clone", layout="wide")
+st.set_page_config(layout="wide")
 
-# ---------------- SESSION ----------------
-if "page" not in st.session_state:
-    st.session_state.page = "home"
+st.title("📄 PDF24 Clone Pro")
 
-# ---------------- UI ----------------
-st.markdown("""
-<style>
-body { background:#0b1220; color:white; }
+tool = st.selectbox("Choose Tool", [
+    "Merge", "Split", "PDF→Images", "Images→PDF",
+    "Rotate", "Extract", "Delete", "Reorder",
+    "Compress", "Watermark", "Extract Text",
+    "Info", "Grayscale", "Duplicate", "Reverse"
+])
 
-.title {
-    text-align:center;
-    font-size:48px;
-    font-weight:900;
-    color:#38bdf8;
-}
+file = st.file_uploader("Upload File", accept_multiple_files=True)
 
-.card button {
-    width:100%;
-    height:90px;
-    font-size:18px;
-    font-weight:800;
-    border-radius:15px;
-}
-</style>
-""", unsafe_allow_html=True)
+if tool == "Merge" and file:
+    if st.button("Run"):
+        out = tools.merge_pdf(file)
+        st.download_button("Download", out)
 
-# ---------------- HOME ----------------
-def home():
-    st.markdown("<div class='title'>📄 PDF24 CLONE</div>", unsafe_allow_html=True)
-    st.write("Select a tool")
+elif tool == "Split" and file:
+    if st.button("Run"):
+        res = tools.split_pdf(file[0])
+        for n, b in res:
+            st.download_button(n, b)
 
-    col1, col2, col3 = st.columns(3)
+elif tool == "PDF→Images" and file:
+    if st.button("Run"):
+        res = tools.pdf_to_images(file[0])
+        for n, b in res:
+            st.image(b)
+            st.download_button(n, b)
 
-    with col1:
-        if st.button("📎 Merge PDF"):
-            st.session_state.page = "merge"
+elif tool == "Images→PDF" and file:
+    if st.button("Run"):
+        out = tools.images_to_pdf(file)
+        st.download_button("Download", out)
 
-        if st.button("✂️ Split PDF"):
-            st.session_state.page = "split"
+elif tool == "Rotate" and file:
+    if st.button("Run"):
+        out = tools.rotate_pdf(file[0])
+        st.download_button("Download", out)
 
-    with col2:
-        if st.button("🖼️ PDF → Images"):
-            st.session_state.page = "pdf2img"
+elif tool == "Extract" and file:
+    pages = st.text_input("Pages (0,1,2)")
+    if st.button("Run"):
+        out = tools.extract_pages(file[0], list(map(int, pages.split(","))))
+        st.download_button("Download", out)
 
-        if st.button("📷 Images → PDF"):
-            st.session_state.page = "img2pdf"
+elif tool == "Delete" and file:
+    pages = st.text_input("Pages to delete")
+    if st.button("Run"):
+        out = tools.delete_pages(file[0], list(map(int, pages.split(","))))
+        st.download_button("Download", out)
 
-    with col3:
-        if st.button("🔄 Rotate PDF"):
-            st.session_state.page = "rotate"
+elif tool == "Reorder" and file:
+    order = st.text_input("Order (2,0,1)")
+    if st.button("Run"):
+        out = tools.reorder_pages(file[0], list(map(int, order.split(","))))
+        st.download_button("Download", out)
 
+elif tool == "Compress" and file:
+    if st.button("Run"):
+        out = tools.compress_pdf(file[0])
+        st.download_button("Download", out)
 
-# ---------------- MERGE UI ----------------
-def merge_ui():
-    st.title("📎 Merge PDF")
+elif tool == "Watermark" and file:
+    text = st.text_input("Watermark text")
+    if st.button("Run"):
+        out = tools.watermark_pdf(file[0], text)
+        st.download_button("Download", out)
 
-    files = st.file_uploader("Upload PDFs", accept_multiple_files=True)
+elif tool == "Extract Text" and file:
+    if st.button("Run"):
+        text = tools.extract_text(file[0])
+        st.text_area("Text", text)
 
-    if files and st.button("Merge"):
-        output = tools.merge_pdf(files)
+elif tool == "Info" and file:
+    if st.button("Run"):
+        st.write(tools.pdf_info(file[0]))
 
-        with open(output, "rb") as f:
-            st.download_button("Download", f, file_name="merged.pdf")
+elif tool == "Grayscale" and file:
+    if st.button("Run"):
+        out = tools.grayscale_pdf(file[0])
+        st.download_button("Download", out)
 
+elif tool == "Duplicate" and file:
+    if st.button("Run"):
+        out = tools.duplicate_pages(file[0])
+        st.download_button("Download", out)
 
-# ---------------- SPLIT UI ----------------
-def split_ui():
-    st.title("✂️ Split PDF")
-
-    file = st.file_uploader("Upload PDF")
-
-    if file and st.button("Split"):
-        results = tools.split_pdf(file)
-
-        for name, data in results:
-            st.download_button(name, data, file_name=name)
-
-
-# ---------------- PDF TO IMAGES ----------------
-def pdf2img_ui():
-    st.title("🖼️ PDF → Images")
-
-    file = st.file_uploader("Upload PDF")
-
-    if file and st.button("Convert"):
-        images = tools.pdf_to_images(file)
-
-        for name, img in images:
-            st.image(img)
-            st.download_button(name, img, file_name=name)
-
-
-# ---------------- IMAGES TO PDF ----------------
-def img2pdf_ui():
-    st.title("📷 Images → PDF")
-
-    files = st.file_uploader("Upload Images", accept_multiple_files=True)
-
-    if files and st.button("Convert"):
-        pdf = tools.images_to_pdf(files)
-
-        st.download_button("Download PDF", pdf, file_name="images.pdf")
-
-
-# ---------------- ROTATE ----------------
-def rotate_ui():
-    st.title("🔄 Rotate PDF")
-
-    file = st.file_uploader("Upload PDF")
-
-    if file and st.button("Rotate"):
-        pdf = tools.rotate_pdf(file)
-
-        st.download_button("Download", pdf, file_name="rotated.pdf")
-
-
-# ---------------- ROUTER ----------------
-if st.session_state.page == "home":
-    home()
-
-elif st.session_state.page == "merge":
-    merge_ui()
-
-elif st.session_state.page == "split":
-    split_ui()
-
-elif st.session_state.page == "pdf2img":
-    pdf2img_ui()
-
-elif st.session_state.page == "img2pdf":
-    img2pdf_ui()
-
-elif st.session_state.page == "rotate":
-    rotate_ui()
+elif tool == "Reverse" and file:
+    if st.button("Run"):
+        out = tools.reverse_pdf(file[0])
+        st.download_button("Download", out)
