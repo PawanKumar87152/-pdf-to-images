@@ -1,52 +1,103 @@
 import streamlit as st
-import fitz  # PyMuPDF
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+import fitz
 from PIL import Image
 import io
-import zipfile
 
-st.set_page_config(page_title="PDF to Images Pro", layout="wide")
+st.set_page_config(page_title="PDF Suite", layout="wide")
 
-st.title("📄➡️🖼️ PDF to Images Pro (Fixed Version)")
+# ---------------- HEADER ----------------
+st.markdown("""
+<h1 style='text-align:center;'>📄 PDF TOOL SUITE</h1>
+<p style='text-align:center;color:gray;'>All-in-one PDF tools like iLovePDF</p>
+<hr>
+""", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])
+# ---------------- SIDEBAR MENU ----------------
+tool = st.sidebar.selectbox(
+    "Choose Tool",
+    [
+        "Home",
+        "Merge PDF",
+        "Split PDF",
+        "PDF to Images"
+    ]
+)
 
-def pdf_to_images(pdf_bytes):
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    images = []
+# ---------------- HOME ----------------
+if tool == "Home":
+    st.image("https://cdn-icons-png.flaticon.com/512/337/337946.png", width=200)
+    st.write("### Welcome to PDF Suite 🚀")
+    st.write("Select a tool from sidebar")
 
-    for page in doc:
-        pix = page.get_pixmap()
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        images.append(img)
+# ---------------- MERGE PDF ----------------
+elif tool == "Merge PDF":
 
-    return images
+    st.subheader("📎 Merge PDF")
 
-if uploaded_file:
+    files = st.file_uploader("Upload PDFs", type="pdf", accept_multiple_files=True)
 
-    if st.button("Convert PDF 🚀"):
+    if files and st.button("Merge"):
 
-        images = pdf_to_images(uploaded_file.read())
+        merger = PdfMerger()
 
-        zip_buffer = io.BytesIO()
+        for f in files:
+            merger.append(f)
 
-        with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+        output = "merged.pdf"
+        merger.write(output)
+        merger.close()
 
-            for i, img in enumerate(images):
-                img_bytes = io.BytesIO()
-                img.save(img_bytes, format="PNG")
-                img_bytes.seek(0)
+        with open(output, "rb") as f:
+            st.download_button("Download", f, file_name="merged.pdf")
 
-                zip_file.writestr(f"page_{i+1}.png", img_bytes.read())
+# ---------------- SPLIT PDF ----------------
+elif tool == "Split PDF":
 
-                st.image(img, caption=f"Page {i+1}")
+    st.subheader("✂️ Split PDF")
 
-        zip_buffer.seek(0)
+    file = st.file_uploader("Upload PDF")
 
-        st.download_button(
-            "⬇️ Download Images ZIP",
-            zip_buffer,
-            file_name="pdf_images.zip",
-            mime="application/zip"
-        )
-else:
-    st.info("Upload PDF to start")
+    if file and st.button("Split"):
+
+        reader = PdfReader(file)
+
+        for i, page in enumerate(reader.pages):
+
+            writer = PdfWriter()
+            writer.add_page(page)
+
+            output = f"page_{i+1}.pdf"
+
+            with open(output, "wb") as f:
+                writer.write(f)
+
+            with open(output, "rb") as f:
+                st.download_button(f"Download Page {i+1}", f)
+
+# ---------------- PDF TO IMAGES ----------------
+elif tool == "PDF to Images":
+
+    st.subheader("🖼️ PDF to Images")
+
+    file = st.file_uploader("Upload PDF")
+
+    if file and st.button("Convert"):
+
+        doc = fitz.open(stream=file.read(), filetype="pdf")
+
+        for i, page in enumerate(doc):
+
+            pix = page.get_pixmap()
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+
+            st.image(img, caption=f"Page {i+1}")
+
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+
+            st.download_button(
+                f"Download Page {i+1}",
+                buf.getvalue(),
+                file_name=f"page_{i+1}.png"
+            )
