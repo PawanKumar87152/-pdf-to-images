@@ -1,64 +1,84 @@
 import streamlit as st
-import fitz  # PyMuPDF
+import fitz
 from PIL import Image
 import io
 from PyPDF2 import PdfMerger
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="PDF Suite", layout="wide")
+# ---------------- CONFIG ----------------
+st.set_page_config(page_title="PDF Suite Pro", layout="wide")
 
-# ---------------- SESSION STATE ----------------
+# ---------------- SESSION ----------------
 if "page" not in st.session_state:
     st.session_state.page = "home"
 
-# ---------------- CSS UI ----------------
+# ---------------- GLASSMORPHISM CSS ----------------
 st.markdown("""
 <style>
+
+/* Background */
 body {
-    background-color: #f5f7fb;
+    background: linear-gradient(135deg, #e0eafc, #cfdef3);
+}
+
+/* Glass card */
+.glass {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    text-align: center;
 }
 
 /* Title */
 .title {
     font-size: 48px;
     font-weight: 900;
-    text-align: center;
     color: #1f4fff;
-    margin-top: 20px;
+    text-align: center;
 }
 
 /* Subtitle */
 .sub {
     text-align: center;
     font-size: 18px;
-    color: gray;
+    color: #444;
 }
 
 /* Buttons */
 .stButton > button {
     width: 100%;
     height: 120px;
-    font-size: 22px;
-    font-weight: 800;
-    border-radius: 20px;
-    background: white;
-    box-shadow: 0px 5px 15px rgba(0,0,0,0.1);
+    font-size: 20px;
+    font-weight: 700;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     transition: 0.3s;
 }
 
 .stButton > button:hover {
-    transform: scale(1.05);
-    box-shadow: 0px 8px 20px rgba(0,0,0,0.2);
+    transform: translateY(-5px);
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.2);
 }
+
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- HOME PAGE ----------------
+# ---------------- HOME ----------------
 def home():
-    st.markdown("<div class='title'>📄 PDF TOOL SUITE</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sub'>All-in-one PDF tools like iLovePDF</div>", unsafe_allow_html=True)
 
-    st.markdown("---")
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
+
+    st.markdown("<div class='title'>📄 PDF SUITE PRO</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sub'>Modern glassmorphism PDF tools dashboard</div>", unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("### ")
 
     col1, col2, col3 = st.columns(3)
 
@@ -71,13 +91,15 @@ def home():
             st.session_state.page = "merge"
 
     with col3:
-        if st.button("🏠 Reset"):
+        if st.button("🏠 Home"):
             st.session_state.page = "home"
 
 # ---------------- PDF TO IMAGES ----------------
 def pdf_to_images():
 
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
     st.title("📄➡️🖼️ PDF to Images")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     file = st.file_uploader("Upload PDF", type=["pdf"])
 
@@ -96,7 +118,7 @@ def pdf_to_images():
             img.save(buf, format="PNG")
 
             st.download_button(
-                f"⬇️ Download Page {i+1}",
+                f"⬇️ Page {i+1}",
                 buf.getvalue(),
                 file_name=f"page_{i+1}.png"
             )
@@ -107,7 +129,9 @@ def pdf_to_images():
 # ---------------- MERGE PDF ----------------
 def merge_pdf():
 
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
     st.title("📎 Merge PDF")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     files = st.file_uploader("Upload PDFs", accept_multiple_files=True)
 
@@ -123,7 +147,7 @@ def merge_pdf():
         merger.close()
 
         with open(output, "rb") as f:
-            st.download_button("⬇️ Download Merged PDF", f, file_name="merged.pdf")
+            st.download_button("⬇️ Download", f, file_name="merged.pdf")
 
     if st.button("⬅️ Back"):
         st.session_state.page = "home"
